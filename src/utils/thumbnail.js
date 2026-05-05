@@ -35,7 +35,38 @@ const THUMBNAILS_DIR = path.join(__dirname, '../../uploads/thumbnails');
  * // Creates: uploads/thumbnails/thumb-1704067200000-abc123.jpg
  */
 export async function generateThumbnail(filename) {
-  // Your code here
+  const inputPath = path.join(__dirname,"../../uploads", filename);
+  const thumbnailName = 'thumb-'+ filename.replace(/\.\w+$/, '.jpg')
+
+  const outputPath = path.join(__dirname, "../../uploads/thumbnails", thumbnailName);
+  const { size: originalSize } = await fs.stat(inputPath);
+  const qualities = [80, 70, 60, 50, 40];
+  let createdSmallerThumbnail = false;
+
+  for (const quality of qualities) {
+    await sharp(inputPath)
+      .resize(200,200, {
+        fit: "inside",
+        withoutEnlargement: true
+      })
+      .jpeg({
+        quality,
+        mozjpeg: true
+      })
+      .toFile(outputPath);
+
+    const { size: thumbnailSize } = await fs.stat(outputPath);
+    if (thumbnailSize <= originalSize) {
+      createdSmallerThumbnail = true;
+      break;
+    }
+  }
+
+  if (!createdSmallerThumbnail) {
+    await fs.copyFile(inputPath, outputPath);
+  }
+
+    return thumbnailName;
 }
 
 /**
@@ -58,5 +89,6 @@ export async function generateThumbnail(filename) {
  * // Returns: { width: 1920, height: 1080 }
  */
 export async function getImageDimensions(filepath) {
-  // Your code here
+  const {width, height} = await sharp(filepath).metadata();
+  return {width, height};
 }

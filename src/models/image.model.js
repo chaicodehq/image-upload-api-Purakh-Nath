@@ -27,10 +27,68 @@ import mongoose from 'mongoose';
 
 const imageSchema = new mongoose.Schema(
   {
-    // Your schema fields here
+     originalName: {
+      type: String,
+      required: [true, "originalName is required field"],
+      trim: true,
+      maxlength: [255, "maxlength of originalName is 255"],
+    },
+
+    filename: {
+      type: String,
+      required: true,
+      unique: true,
+    },
+    mimetype: {
+      type: String,
+      enum: ["image/jpeg", "image/png", "image/gif"],
+      required: [true, "mimeType is a reuired field"],
+    },
+    size: {
+      type: Number,
+      required: [true, "size is a required field"],
+      min: 1,
+      max: 5 * 1024 * 1024,
+    },
+    width: {
+      type: Number,
+      required: [true, "width is a required field"],
+      min: 1,
+    },
+     
+    height: {
+      type: Number,
+      required: [true, "height is a required field"],
+      min: 1,
+    },
+    thumbnailFilename: {
+      type: String,
+      required: [true, "thumbnailFilename is a required field"],
+    },
+    description: {
+      type: String,
+      trim: true,
+      maxlength: [500, "maxlength for description field is 500"],
+      default: ''
+      
+    },
+    tags: {
+      type: [String],
+      default: [],
+      validate: {
+        validator: function(v){
+          return v.length <= 10;
+        },
+        message: "Cannot have more than 10 tags"
+      }
+    },
+    uploadDate: {
+      type: Date,
+      default: Date.now()
+    }
   },
   {
-    // Schema options here
+    timestamps: true,
   }
 );
 
@@ -39,5 +97,11 @@ const imageSchema = new mongoose.Schema(
 // imageSchema.index({ mimetype: 1, uploadDate: -1 });
 // imageSchema.index({ originalName: 'text', description: 'text' });
 
+imageSchema.index({uploadDate: -1});
+imageSchema.index({mimeType: 1, uploadDate: -1})
+imageSchema.index({originalName: 'text', description:'text' });
+
+
 // TODO: Create and export the Image model
 // export const Image = mongoose.model('Image', imageSchema);
+export const Image = mongoose.model("Image", imageSchema)

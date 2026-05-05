@@ -1,7 +1,7 @@
-import multer from 'multer';
-import path from 'path';
-import crypto from 'crypto';
-import { fileURLToPath } from 'url';
+import multer from "multer";
+import path from "path";
+import crypto from "crypto";
+import { fileURLToPath } from "url";
 
 /**
  * TODO: Configure multer for image uploads
@@ -17,46 +17,47 @@ import { fileURLToPath } from 'url';
  * 4. Set limits:
  *    - fileSize: 5MB (5 * 1024 * 1024)
  * 5. Export upload middleware
- *
- * Example structure:
- * const __dirname = path.dirname(fileURLToPath(import.meta.url));
- * const UPLOAD_DIR = path.join(__dirname, '../../uploads');
- *
- * const storage = multer.diskStorage({
- *   destination: (req, file, cb) => { ... },
- *   filename: (req, file, cb) => { ... }
- * });
- *
- * const fileFilter = (req, file, cb) => { ... };
- *
- * export const upload = multer({ storage, fileFilter, limits: { ... } });
  */
-
-// Your code here
-
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const UPLOAD_DIR = path.join(__dirname, "../../uploads");
 
-const storage = multer.diskStorage({
-    destination: function(req, file, cb){
-        cb(null, UPLOAD_DIR)
-    },
-    filename: function(req, file, cb){
-        const uniqueName = `${Date.now()}-${crypto.randomBytes(4).toString('hex')}${path.extname(file.originalname)}`
+import fs from "fs";
+if (!fs.existsSync(UPLOAD_DIR)) {
+  fs.mkdirSync(UPLOAD_DIR, { recursive: true });
+}
 
-        cb(null, uniqueName)
-    }
-})
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, UPLOAD_DIR);
+  },
+  filename: (req, file, cb) => {
+    const timestamp = Date.now();
+    const random = crypto.randomBytes(4).toString("hex");
+    const extension = path.extname(file.originalname);
+
+    const filename = `${timestamp}-${random}${extension}`;
+    cb(null, filename);
+  },
+});
 
 const fileFilter = (req, file, cb) => {
-        console.log(file.mimetype)
-        if(! ["image/jpeg", "image/png", "image/gif"].includes(file.mimetype)){
-            console.log("rejected")
-            return cb(new Error('Invalid file type'), false)
-        }
-        console.log("Not rejected")
-        return cb(null , true);
-        
-    }
-export const upload = multer({storage, fileFilter, limits: {fileSize: 5 * 1024 * 1024}});
+  const allowedTypes = ["image/jpeg", "image/png", "image/gif"];
+
+  if (allowedTypes.includes(file.mimetype)) {
+    cb(null, true);
+  } else {
+    cb(
+      new Error("Invalid file type. Only JPEG, PNG, and GIF are allowed."),
+      false,
+    );
+  }
+};
+
+export const upload = multer({
+  storage,
+  fileFilter,
+  limits: {
+    fileSize: 5 * 1024 * 1024,
+  },
+});

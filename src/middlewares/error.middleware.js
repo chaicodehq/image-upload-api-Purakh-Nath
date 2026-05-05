@@ -1,3 +1,5 @@
+import mongoose from "mongoose";
+
 /**
  * TODO: Global error handler
  *
@@ -21,29 +23,50 @@
  *    - { error: { message: err.message || 'Internal server error' } }
  */
 export function errorHandler(err, req, res, next) {
-    if(err.code === 'LIMIT_FILE_SIZE'){
-    return res
-      .status(400)
-      .json({error: {message: 'File size exceeds 5MB limit'}})
+  // 1. Multer file size error
+  if (err?.code === "LIMIT_FILE_SIZE") {
+    return res.status(400).json({
+      error: {
+        message: "File size exceeds 5MB limit",
+      },
+    });
   }
-  if(['Invalid file type'].includes(err.message)){
-    return res
-      .status(400)
-      .json({error: {message: err.message}})
+
+  // 2. Multer file type error
+  if (err?.message && err.message.includes("Invalid file type")) {
+    return res.status(400).json({
+      error: {
+        message: err.message,
+      },
+    });
   }
-  if(err.name === "ValidationError"){
-    const errors = err.errors.join(" ")
-    return res
-      .status(400)
-      .json({error: {message: errors}})
+
+  // 3. Mongoose validation error
+  if (err?.name === "ValidationError") {
+    const messages = Object.values(err.errors)
+      .map((e) => e.message)
+      .join(", ");
+
+    return res.status(400).json({
+      error: {
+        message: messages,
+      },
+    });
   }
-  if(err.code === 11000){
-    return res
-      .status(409)
-      .json({error: {message: 'Resource already exists'}})
+
+  // 4. Mongoose duplicate key error
+  if (err?.code === 11000) {
+    return res.status(409).json({
+      error: {
+        message: "Resource already exists",
+      },
+    });
   }
-  const status = err.status || 500;
-  return res  
-    .status(status)
-    .json({error: {message: err.message || 'Internal server error'}})
+
+  // 5. Default error
+  return res.status(err.status || 500).json({
+    error: {
+      message: err.message || "Internal server error",
+    },
+  });
 }
